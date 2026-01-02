@@ -1,4 +1,5 @@
 import { ref } from 'vue'
+import { useAuth } from './useAuth'
 
 const API_BASE = '/api'
 
@@ -6,9 +7,18 @@ export const parties = ref([])
 export const bookings = ref([])
 
 export function useApi() {
+  const { getAuthHeaders } = useAuth()
+
   async function loadParties() {
     try {
-      const response = await fetch(`${API_BASE}/parties`)
+      const response = await fetch(`${API_BASE}/parties`, {
+        headers: getAuthHeaders()
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
+
       parties.value = await response.json()
     } catch (error) {
       console.error('Error loading parties:', error)
@@ -18,7 +28,14 @@ export function useApi() {
 
   async function loadBookings() {
     try {
-      const response = await fetch(`${API_BASE}/bookings`)
+      const response = await fetch(`${API_BASE}/bookings`, {
+        headers: getAuthHeaders()
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
+
       bookings.value = await response.json()
     } catch (error) {
       console.error('Error loading bookings:', error)
@@ -29,7 +46,10 @@ export function useApi() {
   async function createBooking(booking) {
     const response = await fetch(`${API_BASE}/bookings`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeaders()
+      },
       body: JSON.stringify(booking)
     })
 
@@ -44,11 +64,13 @@ export function useApi() {
 
   async function deleteBooking(id) {
     const response = await fetch(`${API_BASE}/bookings/${id}`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      headers: getAuthHeaders()
     })
 
     if (!response.ok) {
-      throw new Error('Fehler beim Löschen')
+      const error = await response.json()
+      throw new Error(error.detail || 'Fehler beim Löschen')
     }
 
     await loadBookings()

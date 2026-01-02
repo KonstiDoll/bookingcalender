@@ -1,9 +1,11 @@
 <script setup>
 import { computed } from 'vue'
 import { bookings, useApi } from '../composables/useApi'
+import { useAuth } from '../composables/useAuth'
 import { useToast } from '../composables/useToast'
 
 const { deleteBooking } = useApi()
+const { canModifyBooking } = useAuth()
 const { success, error } = useToast()
 
 const sortedBookings = computed(() => {
@@ -83,6 +85,7 @@ async function handleDelete(id) {
         </div>
 
         <button
+          v-if="canModifyBooking(booking.party_id)"
           class="w-8 h-8 rounded-lg flex items-center justify-center text-text-tertiary transition-colors hover:bg-red-100 hover:text-red-600 shrink-0"
           @click="handleDelete(booking.id)"
           title="Löschen"

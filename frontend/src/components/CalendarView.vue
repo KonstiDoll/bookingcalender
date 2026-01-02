@@ -1,5 +1,17 @@
 <script setup>
+import { computed } from 'vue'
 import { useCalendar } from '../composables/useCalendar'
+
+const props = defineProps({
+  selectionStart: {
+    type: String,
+    default: ''
+  },
+  selectionEnd: {
+    type: String,
+    default: ''
+  }
+})
 
 const emit = defineEmits(['dayClick'])
 
@@ -11,6 +23,27 @@ const {
   nextMonth,
   goToToday
 } = useCalendar()
+
+function isInSelection(date) {
+  if (!props.selectionStart) return false
+
+  const start = props.selectionStart
+  const end = props.selectionEnd || props.selectionStart
+
+  return date >= start && date <= end
+}
+
+function getSelectionPosition(date) {
+  if (!isInSelection(date)) return null
+
+  const start = props.selectionStart
+  const end = props.selectionEnd || props.selectionStart
+
+  if (start === end && date === start) return 'single'
+  if (date === start) return 'start'
+  if (date === end) return 'end'
+  return 'middle'
+}
 </script>
 
 <template>
@@ -66,19 +99,36 @@ const {
       <div
         v-for="(day, index) in calendarDays"
         :key="index"
-        class="aspect-square bg-white p-1 cursor-pointer transition-colors hover:bg-bg-cream min-h-20 flex flex-col"
+        class="aspect-square bg-white p-1 cursor-pointer transition-all min-h-20 flex flex-col relative"
         :class="{
-          'bg-bg-warm': !day.isCurrentMonth,
-          'bg-gradient-to-br from-family-1/10 to-family-1/5': day.isToday
+          'bg-bg-warm': !day.isCurrentMonth && !isInSelection(day.date),
+          'bg-gradient-to-br from-family-1/10 to-family-1/5': day.isToday && !isInSelection(day.date),
+          'hover:bg-bg-cream': !isInSelection(day.date),
+          'bg-family-1/15': isInSelection(day.date),
+          'rounded-l-lg': getSelectionPosition(day.date) === 'start',
+          'rounded-r-lg': getSelectionPosition(day.date) === 'end',
+          'rounded-lg': getSelectionPosition(day.date) === 'single'
         }"
         @click="emit('dayClick', day.date)"
       >
+        <!-- Selection indicator bar -->
+        <div
+          v-if="isInSelection(day.date)"
+          class="absolute bottom-0 left-0 right-0 h-1 bg-family-1/40"
+          :class="{
+            'rounded-bl-lg ml-1': getSelectionPosition(day.date) === 'start',
+            'rounded-br-lg mr-1': getSelectionPosition(day.date) === 'end',
+            'rounded-b-lg mx-1': getSelectionPosition(day.date) === 'single'
+          }"
+        />
+
         <span
           class="text-sm font-medium mb-1"
           :class="{
-            'text-text-tertiary/50': !day.isCurrentMonth,
+            'text-text-tertiary/50': !day.isCurrentMonth && !isInSelection(day.date),
             'bg-family-1 text-white w-7 h-7 rounded-full flex items-center justify-center': day.isToday,
-            'text-text-primary': day.isCurrentMonth && !day.isToday
+            'text-text-primary': day.isCurrentMonth && !day.isToday,
+            'text-family-1 font-semibold': isInSelection(day.date) && !day.isToday
           }"
         >
           {{ day.dayNumber }}

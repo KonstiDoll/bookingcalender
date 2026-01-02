@@ -15,6 +15,13 @@ from sqlalchemy import select, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db, init_db, Booking, Party
+from auth import (
+    verify_password,
+    create_session_token,
+    get_current_user,
+    can_modify_booking,
+    User
+)
 
 
 # Pydantic Models
@@ -34,8 +41,8 @@ class BookingCreate(BaseModel):
     @field_validator('party_id')
     @classmethod
     def valid_party_id(cls, v):
-        if v < 1 or v > 5:
-            raise ValueError('party_id must be between 1 and 5')
+        if v < 1 or v > 4:
+            raise ValueError('party_id must be between 1 and 4')
         return v
 
 
@@ -65,13 +72,30 @@ class MessageResponse(BaseModel):
     message: str
 
 
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+
+class LoginResponse(BaseModel):
+    token: str
+    user: dict
+    message: str
+
+
+class UserResponse(BaseModel):
+    party_id: Optional[int]
+    is_admin: bool
+    username: str
+
+
 # Predefined parties with earth-tone colors
 PARTIES = [
-    {"id": 1, "name": "Familie Müller", "color": "#2D5A47"},   # Forest Green
-    {"id": 2, "name": "Familie Schmidt", "color": "#4A6B8A"},  # Ocean Slate
-    {"id": 3, "name": "Familie Weber", "color": "#C4703D"},    # Terracotta
-    {"id": 4, "name": "Familie Fischer", "color": "#6B4E71"},  # Wild Plum
-    {"id": 5, "name": "Familie Wagner", "color": "#B8860B"},   # Golden Amber
+    {"id": 1, "name": "Siggi & Mausi", "color": "#2D5A47"},   # Forest Green
+    {"id": 2, "name": "Silke & Wolfi & Zoe", "color": "#4A6B8A"},  # Ocean Slate
+    {"id": 3, "name": "Claudi & Wolfram", "color": "#C4703D"},    # Terracotta
+    {"id": 4, "name": "Extern", "color": "#6B4E71"}  # Wild Plum
+    # {"id": 5, "name": "Familie Wagner", "color": "#B8860B"},   # Golden Amber
 ]
 
 
@@ -129,16 +153,60 @@ async def check_booking_overlap(
     return result.scalar() is not None
 
 
+# Authentication Routes
+@app.post("/api/auth/login", response_model=LoginResponse)
+async def login(credentials: LoginRequest):
+    """Authenticate user and return session token"""
+    user = verify_password(credentials.username, credentials.password)
+
+    if not user:
+        raise HTTPException(
+            status_code=401,
+            detail="Ungültiger Benutzername oder Passwort"
+        )
+
+    token = create_session_token(user)
+
+    return LoginResponse(
+        token=token,
+        user={
+            "party_id": user.party_id,
+            "is_admin": user.is_admin,
+            "username": user.username
+        },
+        message=f"Erfolgreich angemeldet als {user.username}"
+    )
+
+
+@app.get("/api/auth/me", response_model=UserResponse)
+async def get_current_user_info(current_user: User = Depends(get_current_user)):
+    """Get current authenticated user info"""
+    return UserResponse(
+        party_id=current_user.party_id,
+        is_admin=current_user.is_admin,
+        username=current_user.username
+    )
+
+
+@app.post("/api/auth/logout", response_model=MessageResponse)
+async def logout(current_user: User = Depends(get_current_user)):
+    """Logout endpoint (token invalidation handled client-side)"""
+    return MessageResponse(message="Erfolgreich abgemeldet")
+
+
 # API Routes
 @app.get("/api/parties", response_model=list[PartyResponse])
-async def get_parties():
-    """Get all available parties (families)"""
+async def get_parties(current_user: User = Depends(get_current_user)):
+    """Get all available parties (families) - requires authentication"""
     return PARTIES
 
 
 @app.get("/api/bookings", response_model=list[BookingResponse])
-async def get_bookings(db: AsyncSession = Depends(get_db)):
-    """Get all bookings with party information"""
+async def get_bookings(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get all bookings with party information - requires authentication"""
     result = await db.execute(
         select(Booking).order_by(Booking.start_date)
     )
@@ -163,13 +231,21 @@ async def get_bookings(db: AsyncSession = Depends(get_db)):
 @app.post("/api/bookings", response_model=BookingResponse, status_code=201)
 async def create_booking(
     booking: BookingCreate,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
-    """Create a new booking"""
+    """Create a new booking - requires authentication and authorization"""
     # Validate party exists
     party = get_party_by_id(booking.party_id)
     if not party:
         raise HTTPException(status_code=400, detail="Ungültige Familie")
+
+    # Check authorization: users can only book for their own party
+    if not can_modify_booking(current_user, booking.party_id):
+        raise HTTPException(
+            status_code=403,
+            detail="Sie können nur Buchungen für Ihre eigene Familie erstellen"
+        )
 
     # Check for overlapping bookings
     if await check_booking_overlap(db, booking.start_date, booking.end_date):
@@ -203,9 +279,10 @@ async def create_booking(
 @app.delete("/api/bookings/{booking_id}", response_model=MessageResponse)
 async def delete_booking(
     booking_id: int,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
-    """Delete a booking by ID"""
+    """Delete a booking by ID - requires authentication and authorization"""
     result = await db.execute(
         select(Booking).where(Booking.id == booking_id)
     )
@@ -213,6 +290,13 @@ async def delete_booking(
 
     if not booking:
         raise HTTPException(status_code=404, detail="Buchung nicht gefunden")
+
+    # Check authorization: users can only delete their own party's bookings
+    if not can_modify_booking(current_user, booking.party_id):
+        raise HTTPException(
+            status_code=403,
+            detail="Sie können nur Ihre eigenen Buchungen löschen"
+        )
 
     await db.delete(booking)
     await db.commit()

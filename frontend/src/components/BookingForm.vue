@@ -1,22 +1,24 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, computed, onMounted } from 'vue'
 import { parties, useApi } from '../composables/useApi'
+import { useAuth } from '../composables/useAuth'
 import { useToast } from '../composables/useToast'
 
 const props = defineProps({
-  selectedParty: {
-    type: Number,
-    default: null
+  selectionStart: {
+    type: String,
+    default: ''
   },
-  selectedDate: {
+  selectionEnd: {
     type: String,
     default: ''
   }
 })
 
-const emit = defineEmits(['saved', 'partySelect'])
+const emit = defineEmits(['saved', 'selectionChange'])
 
 const { createBooking } = useApi()
+const { currentUser, isAdmin } = useAuth()
 const { success, error } = useToast()
 
 const form = ref({
@@ -26,24 +28,40 @@ const form = ref({
   note: ''
 })
 
-watch(() => props.selectedParty, (newVal) => {
-  if (newVal) {
-    form.value.partyId = newVal
+// Filter parties based on user permissions
+const availableParties = computed(() => {
+  if (isAdmin.value) {
+    return parties.value
+  }
+  // Non-admin users can only select their own party
+  return parties.value.filter(p => p.id === currentUser.value?.party_id)
+})
+
+// Pre-select party for non-admin users
+onMounted(() => {
+  if (!isAdmin.value && currentUser.value?.party_id) {
+    form.value.partyId = currentUser.value.party_id
   }
 })
 
-watch(() => props.selectedDate, (newVal) => {
-  if (newVal) {
-    if (!form.value.startDate) {
-      form.value.startDate = newVal
-    } else if (!form.value.endDate && newVal >= form.value.startDate) {
-      form.value.endDate = newVal
-    } else {
-      form.value.startDate = newVal
-      form.value.endDate = ''
-    }
-  }
+watch(() => props.selectionStart, (newVal) => {
+  form.value.startDate = newVal
 })
+
+watch(() => props.selectionEnd, (newVal) => {
+  form.value.endDate = newVal
+})
+
+// Emit changes when form dates change
+function onStartDateChange(e) {
+  form.value.startDate = e.target.value
+  emit('selectionChange', form.value.startDate, form.value.endDate)
+}
+
+function onEndDateChange(e) {
+  form.value.endDate = e.target.value
+  emit('selectionChange', form.value.startDate, form.value.endDate)
+}
 
 async function handleSubmit() {
   if (!form.value.partyId || !form.value.startDate || !form.value.endDate) {
@@ -65,9 +83,10 @@ async function handleSubmit() {
     })
 
     success('Buchung erfolgreich gespeichert')
-    form.value = { partyId: '', startDate: '', endDate: '', note: '' }
+    // Reset form but keep partyId for non-admin users
+    const keepPartyId = !isAdmin.value ? form.value.partyId : ''
+    form.value = { partyId: keepPartyId, startDate: '', endDate: '', note: '' }
     emit('saved')
-    emit('partySelect', null)
   } catch (err) {
     error(err.message)
   }
@@ -84,11 +103,16 @@ async function handleSubmit() {
     </h3>
 
     <form @submit.prevent="handleSubmit">
-      <div class="mb-4">
+      <!-- Familie-Auswahl nur für Admin -->
+      <div v-if="isAdmin" class="mb-4">
         <label class="form-label">Familie</label>
-        <select v-model="form.partyId" class="form-input" required>
+        <select
+          v-model="form.partyId"
+          class="form-input"
+          required
+        >
           <option value="">Familie auswählen...</option>
-          <option v-for="party in parties" :key="party.id" :value="party.id">
+          <option v-for="party in availableParties" :key="party.id" :value="party.id">
             {{ party.name }}
           </option>
         </select>
@@ -99,7 +123,8 @@ async function handleSubmit() {
           <label class="form-label">Von</label>
           <input
             type="date"
-            v-model="form.startDate"
+            :value="form.startDate"
+            @input="onStartDateChange"
             class="form-input"
             required
           />
@@ -108,7 +133,8 @@ async function handleSubmit() {
           <label class="form-label">Bis</label>
           <input
             type="date"
-            v-model="form.endDate"
+            :value="form.endDate"
+            @input="onEndDateChange"
             class="form-input"
             required
           />

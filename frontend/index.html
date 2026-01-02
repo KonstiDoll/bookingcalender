@@ -1,0 +1,1246 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ferienhaus Kalender</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <style>
+    :root {
+      /* Earth-tone family colors */
+      --family-1: #2D5A47; /* Forest Green - Familie Müller */
+      --family-2: #4A6B8A; /* Ocean Slate - Familie Schmidt */
+      --family-3: #C4703D; /* Terracotta - Familie Weber */
+      --family-4: #6B4E71; /* Wild Plum - Familie Fischer */
+      --family-5: #B8860B; /* Golden Amber - Familie Wagner */
+
+      /* Background & Surface */
+      --bg-warm: #FAF6F1;
+      --bg-cream: #F5EFE6;
+      --surface: #FFFFFF;
+      --surface-elevated: #FFFCF8;
+
+      /* Text */
+      --text-primary: #2C2416;
+      --text-secondary: #5C5347;
+      --text-tertiary: #8B8279;
+      --text-on-color: #FFFFFF;
+
+      /* Borders & Shadows */
+      --border-light: rgba(44, 36, 22, 0.08);
+      --border-medium: rgba(44, 36, 22, 0.15);
+      --shadow-soft: 0 2px 8px rgba(44, 36, 22, 0.06);
+      --shadow-medium: 0 4px 20px rgba(44, 36, 22, 0.1);
+      --shadow-elevated: 0 12px 40px rgba(44, 36, 22, 0.15);
+
+      /* Spacing */
+      --space-xs: 0.25rem;
+      --space-sm: 0.5rem;
+      --space-md: 1rem;
+      --space-lg: 1.5rem;
+      --space-xl: 2rem;
+      --space-2xl: 3rem;
+
+      /* Typography */
+      --font-display: 'Fraunces', Georgia, serif;
+      --font-body: 'Source Sans 3', -apple-system, sans-serif;
+
+      /* Animation */
+      --transition-fast: 150ms ease;
+      --transition-medium: 250ms ease;
+      --transition-slow: 400ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      font-size: 16px;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      font-family: var(--font-body);
+      background: linear-gradient(165deg, #FDF8F3 0%, #F9F1E8 30%, #F5EBE0 60%, #EDE4D8 100%);
+      color: var(--text-primary);
+      line-height: 1.6;
+      min-height: 100vh;
+      position: relative;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-image:
+        /* Warm sun glow top-right */
+        radial-gradient(ellipse 80% 50% at 85% -10%, rgba(255, 200, 120, 0.25) 0%, transparent 60%),
+        /* Soft forest hint bottom-left */
+        radial-gradient(ellipse 60% 40% at 10% 100%, rgba(45, 90, 71, 0.08) 0%, transparent 50%),
+        /* Gentle terracotta warmth */
+        radial-gradient(ellipse 50% 50% at 50% 50%, rgba(196, 140, 100, 0.04) 0%, transparent 70%),
+        /* Mountain silhouette hint */
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320'%3E%3Cpath fill='%23e8dfd4' fill-opacity='0.4' d='M0,256L48,240C96,224,192,192,288,197.3C384,203,480,245,576,250.7C672,256,768,224,864,208C960,192,1056,192,1152,208C1248,224,1344,256,1392,272L1440,288L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z'%3E%3C/path%3E%3C/svg%3E");
+      background-position: top right, bottom left, center, bottom;
+      background-size: 100% 100%, 100% 100%, 100% 100%, 100% 200px;
+      background-repeat: no-repeat;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+      opacity: 0.03;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    #app {
+      min-height: 100vh;
+      padding: var(--space-lg);
+      max-width: 1400px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      margin-bottom: var(--space-2xl);
+      padding: var(--space-xl) 0;
+      position: relative;
+    }
+
+    .header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 60px;
+      height: 3px;
+      background: linear-gradient(90deg, var(--family-1), var(--family-3));
+      border-radius: 2px;
+    }
+
+    .header h1 {
+      font-family: var(--font-display);
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+      margin-bottom: var(--space-sm);
+    }
+
+    .header h1 span {
+      font-style: italic;
+      font-weight: 300;
+    }
+
+    .header p {
+      font-size: 1.1rem;
+      color: var(--text-secondary);
+      font-weight: 300;
+    }
+
+    /* Main Layout */
+    .main-content {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: var(--space-xl);
+    }
+
+    @media (min-width: 1024px) {
+      .main-content {
+        grid-template-columns: 1fr 380px;
+      }
+    }
+
+    /* Family Legend */
+    .family-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-sm);
+      justify-content: center;
+      margin-bottom: var(--space-xl);
+    }
+
+    .family-token {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      padding: var(--space-sm) var(--space-md);
+      background: var(--surface);
+      border-radius: 100px;
+      border: 1px solid var(--border-light);
+      cursor: pointer;
+      transition: all var(--transition-medium);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .family-token:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-medium);
+    }
+
+    .family-token.active {
+      border-color: var(--color);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--color) 20%, transparent);
+    }
+
+    .family-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--color);
+      flex-shrink: 0;
+    }
+
+    .family-name {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text-primary);
+      white-space: nowrap;
+    }
+
+    /* Calendar Section */
+    .calendar-section {
+      background: var(--surface);
+      border-radius: 20px;
+      padding: var(--space-xl);
+      box-shadow: var(--shadow-medium);
+      border: 1px solid var(--border-light);
+    }
+
+    .calendar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--space-xl);
+      padding-bottom: var(--space-lg);
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    .calendar-nav {
+      display: flex;
+      gap: var(--space-sm);
+    }
+
+    .nav-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      border: 1px solid var(--border-medium);
+      background: var(--surface);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all var(--transition-fast);
+      color: var(--text-secondary);
+    }
+
+    .nav-btn:hover {
+      background: var(--bg-cream);
+      border-color: var(--text-tertiary);
+      color: var(--text-primary);
+    }
+
+    .nav-btn svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .calendar-title {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .today-btn {
+      padding: var(--space-sm) var(--space-md);
+      border-radius: 8px;
+      border: 1px solid var(--border-medium);
+      background: var(--surface);
+      font-family: var(--font-body);
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+
+    .today-btn:hover {
+      background: var(--bg-cream);
+      color: var(--text-primary);
+    }
+
+    /* Calendar Grid */
+    .calendar-weekdays {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 2px;
+      margin-bottom: var(--space-sm);
+    }
+
+    .weekday {
+      padding: var(--space-sm);
+      text-align: center;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-tertiary);
+    }
+
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 2px;
+      background: var(--border-light);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .calendar-day {
+      aspect-ratio: 1;
+      background: var(--surface);
+      padding: var(--space-xs);
+      position: relative;
+      cursor: pointer;
+      transition: background var(--transition-fast);
+      min-height: 80px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .calendar-day:hover {
+      background: var(--bg-cream);
+    }
+
+    .calendar-day.other-month {
+      background: var(--bg-warm);
+    }
+
+    .calendar-day.other-month .day-number {
+      color: var(--text-tertiary);
+      opacity: 0.5;
+    }
+
+    .calendar-day.today {
+      background: linear-gradient(135deg, rgba(45, 90, 71, 0.08), rgba(45, 90, 71, 0.03));
+    }
+
+    .calendar-day.today .day-number {
+      background: var(--family-1);
+      color: var(--text-on-color);
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .day-number {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text-primary);
+      margin-bottom: var(--space-xs);
+    }
+
+    .day-bookings {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      overflow: hidden;
+    }
+
+    .booking-indicator {
+      height: 6px;
+      border-radius: 3px;
+      background: var(--color);
+      opacity: 0.9;
+      position: relative;
+    }
+
+    .booking-indicator.start {
+      border-top-left-radius: 3px;
+      border-bottom-left-radius: 3px;
+      margin-left: 2px;
+    }
+
+    .booking-indicator.end {
+      border-top-right-radius: 3px;
+      border-bottom-right-radius: 3px;
+      margin-right: 2px;
+    }
+
+    .booking-indicator.middle {
+      border-radius: 0;
+    }
+
+    .booking-indicator.single {
+      margin: 0 2px;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-xl);
+    }
+
+    /* Booking Form Card */
+    .booking-form-card {
+      background: var(--surface);
+      border-radius: 20px;
+      padding: var(--space-xl);
+      box-shadow: var(--shadow-medium);
+      border: 1px solid var(--border-light);
+    }
+
+    .card-title {
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      font-weight: 500;
+      color: var(--text-primary);
+      margin-bottom: var(--space-lg);
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+
+    .card-title svg {
+      width: 24px;
+      height: 24px;
+      color: var(--family-1);
+    }
+
+    .form-group {
+      margin-bottom: var(--space-md);
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-tertiary);
+      margin-bottom: var(--space-sm);
+    }
+
+    .form-select,
+    .form-input {
+      width: 100%;
+      padding: var(--space-md);
+      border-radius: 12px;
+      border: 1px solid var(--border-medium);
+      background: var(--surface);
+      font-family: var(--font-body);
+      font-size: 1rem;
+      color: var(--text-primary);
+      transition: all var(--transition-fast);
+    }
+
+    .form-select:focus,
+    .form-input:focus {
+      outline: none;
+      border-color: var(--family-1);
+      box-shadow: 0 0 0 3px rgba(45, 90, 71, 0.1);
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-md);
+    }
+
+    .form-textarea {
+      min-height: 80px;
+      resize: vertical;
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: var(--space-md) var(--space-lg);
+      border-radius: 12px;
+      border: none;
+      background: var(--family-1);
+      color: var(--text-on-color);
+      font-family: var(--font-body);
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all var(--transition-medium);
+      margin-top: var(--space-md);
+    }
+
+    .submit-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(45, 90, 71, 0.3);
+    }
+
+    .submit-btn:active {
+      transform: translateY(0);
+    }
+
+    /* Bookings List */
+    .bookings-list-card {
+      background: var(--surface);
+      border-radius: 20px;
+      padding: var(--space-xl);
+      box-shadow: var(--shadow-medium);
+      border: 1px solid var(--border-light);
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .bookings-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-md);
+    }
+
+    .booking-item {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-md);
+      padding: var(--space-md);
+      border-radius: 12px;
+      background: var(--bg-cream);
+      transition: all var(--transition-fast);
+    }
+
+    .booking-item:hover {
+      background: var(--bg-warm);
+    }
+
+    .booking-color-bar {
+      width: 4px;
+      height: 100%;
+      min-height: 50px;
+      border-radius: 2px;
+      background: var(--color);
+      flex-shrink: 0;
+    }
+
+    .booking-details {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .booking-party {
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: var(--space-xs);
+    }
+
+    .booking-dates {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: var(--space-xs);
+    }
+
+    .booking-dates svg {
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
+    }
+
+    .booking-note {
+      font-size: 0.8125rem;
+      color: var(--text-tertiary);
+      font-style: italic;
+      margin-top: var(--space-xs);
+    }
+
+    .delete-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      border: none;
+      background: transparent;
+      color: var(--text-tertiary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all var(--transition-fast);
+      flex-shrink: 0;
+    }
+
+    .delete-btn:hover {
+      background: rgba(220, 38, 38, 0.1);
+      color: #DC2626;
+    }
+
+    .delete-btn svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: var(--space-xl);
+      color: var(--text-tertiary);
+    }
+
+    .empty-state svg {
+      width: 48px;
+      height: 48px;
+      margin-bottom: var(--space-md);
+      opacity: 0.3;
+    }
+
+    /* Toast Notification */
+    .toast-container {
+      position: fixed;
+      bottom: var(--space-xl);
+      right: var(--space-xl);
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-sm);
+    }
+
+    .toast {
+      padding: var(--space-md) var(--space-lg);
+      border-radius: 12px;
+      background: var(--text-primary);
+      color: var(--text-on-color);
+      font-weight: 500;
+      box-shadow: var(--shadow-elevated);
+      animation: slideIn 0.3s ease, fadeOut 0.3s ease 2.7s forwards;
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+
+    .toast.success {
+      background: var(--family-1);
+    }
+
+    .toast.error {
+      background: #DC2626;
+    }
+
+    .toast svg {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    @keyframes fadeOut {
+      to {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+    }
+
+    /* Mobile Styles */
+    @media (max-width: 768px) {
+      #app {
+        padding: var(--space-md);
+      }
+
+      .calendar-section {
+        padding: var(--space-md);
+        border-radius: 16px;
+      }
+
+      .calendar-header {
+        flex-wrap: wrap;
+        gap: var(--space-md);
+      }
+
+      .calendar-title {
+        order: -1;
+        width: 100%;
+        text-align: center;
+      }
+
+      .calendar-day {
+        min-height: 60px;
+        padding: 2px;
+      }
+
+      .day-number {
+        font-size: 0.75rem;
+      }
+
+      .booking-indicator {
+        height: 4px;
+      }
+
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+
+      .family-legend {
+        gap: var(--space-xs);
+      }
+
+      .family-token {
+        padding: var(--space-xs) var(--space-sm);
+      }
+
+      .family-name {
+        font-size: 0.75rem;
+      }
+    }
+
+    /* Scrollbar Styling */
+    .bookings-list-card::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .bookings-list-card::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .bookings-list-card::-webkit-scrollbar-thumb {
+      background: var(--border-medium);
+      border-radius: 3px;
+    }
+
+    .bookings-list-card::-webkit-scrollbar-thumb:hover {
+      background: var(--text-tertiary);
+    }
+
+    /* Loading State */
+    .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: var(--space-2xl);
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--border-light);
+      border-top-color: var(--family-1);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <header class="header">
+      <h1>Ferienhaus <span>Kalender</span></h1>
+      <p>Buchungsübersicht für unsere Familien</p>
+    </header>
+
+    <!-- Family Legend -->
+    <div class="family-legend">
+      <div
+        v-for="party in parties"
+        :key="party.id"
+        class="family-token"
+        :class="{ active: selectedParty === party.id }"
+        :style="{ '--color': party.color }"
+        @click="selectParty(party.id)"
+      >
+        <div class="family-dot" :style="{ '--color': party.color }"></div>
+        <span class="family-name">{{ party.name }}</span>
+      </div>
+    </div>
+
+    <div class="main-content">
+      <!-- Calendar Section -->
+      <section class="calendar-section">
+        <div class="calendar-header">
+          <div class="calendar-nav">
+            <button class="nav-btn" @click="previousMonth" aria-label="Vorheriger Monat">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+              </svg>
+            </button>
+            <button class="nav-btn" @click="nextMonth" aria-label="Nächster Monat">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+              </svg>
+            </button>
+          </div>
+          <h2 class="calendar-title">{{ monthYearDisplay }}</h2>
+          <button class="today-btn" @click="goToToday">Heute</button>
+        </div>
+
+        <div class="calendar-weekdays">
+          <div class="weekday" v-for="day in weekdays" :key="day">{{ day }}</div>
+        </div>
+
+        <div class="calendar-grid">
+          <div
+            v-for="(day, index) in calendarDays"
+            :key="index"
+            class="calendar-day"
+            :class="{
+              'other-month': !day.isCurrentMonth,
+              'today': day.isToday
+            }"
+            @click="openBookingForm(day.date)"
+          >
+            <span class="day-number">{{ day.dayNumber }}</span>
+            <div class="day-bookings">
+              <div
+                v-for="booking in day.bookings"
+                :key="booking.id"
+                class="booking-indicator"
+                :class="booking.position"
+                :style="{ '--color': booking.color }"
+                :title="booking.partyName"
+              ></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <!-- Booking Form -->
+        <div class="booking-form-card">
+          <h3 class="card-title">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+            </svg>
+            Neue Buchung
+          </h3>
+
+          <form @submit.prevent="saveBooking">
+            <div class="form-group">
+              <label class="form-label">Familie</label>
+              <select v-model="bookingForm.partyId" class="form-select" required>
+                <option value="">Familie auswählen...</option>
+                <option v-for="party in parties" :key="party.id" :value="party.id">
+                  {{ party.name }}
+                </option>
+              </select>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Von</label>
+                <input
+                  type="date"
+                  v-model="bookingForm.startDate"
+                  class="form-input"
+                  required
+                >
+              </div>
+              <div class="form-group">
+                <label class="form-label">Bis</label>
+                <input
+                  type="date"
+                  v-model="bookingForm.endDate"
+                  class="form-input"
+                  required
+                >
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Notiz (optional)</label>
+              <textarea
+                v-model="bookingForm.note"
+                class="form-input form-textarea"
+                placeholder="z.B. Familienurlaub, Geburtstag..."
+              ></textarea>
+            </div>
+
+            <button type="submit" class="submit-btn">
+              Buchung speichern
+            </button>
+          </form>
+        </div>
+
+        <!-- Bookings List -->
+        <div class="bookings-list-card">
+          <h3 class="card-title">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+            </svg>
+            Buchungen
+          </h3>
+
+          <div v-if="sortedBookings.length === 0" class="empty-state">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            <p>Noch keine Buchungen vorhanden</p>
+          </div>
+
+          <div v-else class="bookings-list">
+            <div
+              v-for="booking in sortedBookings"
+              :key="booking.id"
+              class="booking-item"
+            >
+              <div class="booking-color-bar" :style="{ '--color': booking.party_color }"></div>
+              <div class="booking-details">
+                <div class="booking-party">{{ booking.party_name }}</div>
+                <div class="booking-dates">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                  </svg>
+                  {{ formatDateRange(booking.start_date, booking.end_date) }}
+                </div>
+                <div v-if="booking.note" class="booking-note">{{ booking.note }}</div>
+              </div>
+              <button class="delete-btn" @click="deleteBooking(booking.id)" title="Löschen">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container">
+      <div
+        v-for="toast in toasts"
+        :key="toast.id"
+        class="toast"
+        :class="toast.type"
+      >
+        <svg v-if="toast.type === 'success'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+        </svg>
+        <svg v-else fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+        {{ toast.message }}
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const { createApp, ref, computed, onMounted } = Vue;
+
+    const API_BASE = '/api';
+
+    createApp({
+      setup() {
+        // State
+        const parties = ref([]);
+        const bookings = ref([]);
+        const currentDate = ref(new Date());
+        const selectedParty = ref(null);
+        const toasts = ref([]);
+
+        const bookingForm = ref({
+          partyId: '',
+          startDate: '',
+          endDate: '',
+          note: ''
+        });
+
+        // German weekdays
+        const weekdays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+
+        // German months
+        const monthNames = [
+          'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
+          'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'
+        ];
+
+        // Computed
+        const monthYearDisplay = computed(() => {
+          const month = monthNames[currentDate.value.getMonth()];
+          const year = currentDate.value.getFullYear();
+          return `${month} ${year}`;
+        });
+
+        const calendarDays = computed(() => {
+          const year = currentDate.value.getFullYear();
+          const month = currentDate.value.getMonth();
+
+          const firstDay = new Date(year, month, 1);
+          const lastDay = new Date(year, month + 1, 0);
+
+          // Adjust to start week on Monday (0 = Monday, 6 = Sunday)
+          let startOffset = firstDay.getDay() - 1;
+          if (startOffset < 0) startOffset = 6;
+
+          const days = [];
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+
+          // Previous month days
+          for (let i = startOffset - 1; i >= 0; i--) {
+            const date = new Date(year, month, -i);
+            days.push(createDayObject(date, false, today));
+          }
+
+          // Current month days
+          for (let i = 1; i <= lastDay.getDate(); i++) {
+            const date = new Date(year, month, i);
+            days.push(createDayObject(date, true, today));
+          }
+
+          // Next month days (fill to complete the grid)
+          const remaining = 42 - days.length;
+          for (let i = 1; i <= remaining; i++) {
+            const date = new Date(year, month + 1, i);
+            days.push(createDayObject(date, false, today));
+          }
+
+          return days;
+        });
+
+        const sortedBookings = computed(() => {
+          return [...bookings.value].sort((a, b) =>
+            new Date(a.start_date) - new Date(b.start_date)
+          );
+        });
+
+        // Methods
+        function createDayObject(date, isCurrentMonth, today) {
+          const dateStr = formatDateISO(date);
+          const dayBookings = getBookingsForDate(dateStr);
+
+          return {
+            date: dateStr,
+            dayNumber: date.getDate(),
+            isCurrentMonth,
+            isToday: date.getTime() === today.getTime(),
+            bookings: dayBookings
+          };
+        }
+
+        function getBookingsForDate(dateStr) {
+          return bookings.value
+            .filter(b => dateStr >= b.start_date && dateStr <= b.end_date)
+            .map(b => {
+              let position = 'middle';
+              if (b.start_date === dateStr && b.end_date === dateStr) {
+                position = 'single';
+              } else if (b.start_date === dateStr) {
+                position = 'start';
+              } else if (b.end_date === dateStr) {
+                position = 'end';
+              }
+
+              return {
+                id: b.id,
+                color: b.party_color,
+                partyName: b.party_name,
+                position
+              };
+            });
+        }
+
+        function formatDateISO(date) {
+          return date.toISOString().split('T')[0];
+        }
+
+        function formatDateRange(start, end) {
+          const startDate = new Date(start);
+          const endDate = new Date(end);
+          const options = { day: 'numeric', month: 'short' };
+
+          if (start === end) {
+            return startDate.toLocaleDateString('de-DE', { ...options, year: 'numeric' });
+          }
+
+          const startFormatted = startDate.toLocaleDateString('de-DE', options);
+          const endFormatted = endDate.toLocaleDateString('de-DE', { ...options, year: 'numeric' });
+          return `${startFormatted} – ${endFormatted}`;
+        }
+
+        function previousMonth() {
+          currentDate.value = new Date(
+            currentDate.value.getFullYear(),
+            currentDate.value.getMonth() - 1,
+            1
+          );
+        }
+
+        function nextMonth() {
+          currentDate.value = new Date(
+            currentDate.value.getFullYear(),
+            currentDate.value.getMonth() + 1,
+            1
+          );
+        }
+
+        function goToToday() {
+          currentDate.value = new Date();
+        }
+
+        function selectParty(id) {
+          selectedParty.value = selectedParty.value === id ? null : id;
+          if (selectedParty.value) {
+            bookingForm.value.partyId = id;
+          }
+        }
+
+        function openBookingForm(date) {
+          if (!bookingForm.value.startDate) {
+            bookingForm.value.startDate = date;
+          } else if (!bookingForm.value.endDate && date >= bookingForm.value.startDate) {
+            bookingForm.value.endDate = date;
+          } else {
+            bookingForm.value.startDate = date;
+            bookingForm.value.endDate = '';
+          }
+        }
+
+        function showToast(message, type = 'success') {
+          const id = Date.now();
+          toasts.value.push({ id, message, type });
+          setTimeout(() => {
+            toasts.value = toasts.value.filter(t => t.id !== id);
+          }, 3000);
+        }
+
+        async function loadParties() {
+          try {
+            const response = await fetch(`${API_BASE}/parties`);
+            parties.value = await response.json();
+          } catch (error) {
+            console.error('Error loading parties:', error);
+            showToast('Fehler beim Laden der Familien', 'error');
+          }
+        }
+
+        async function loadBookings() {
+          try {
+            const response = await fetch(`${API_BASE}/bookings`);
+            bookings.value = await response.json();
+          } catch (error) {
+            console.error('Error loading bookings:', error);
+            showToast('Fehler beim Laden der Buchungen', 'error');
+          }
+        }
+
+        async function saveBooking() {
+          if (!bookingForm.value.partyId || !bookingForm.value.startDate || !bookingForm.value.endDate) {
+            showToast('Bitte alle Pflichtfelder ausfüllen', 'error');
+            return;
+          }
+
+          if (bookingForm.value.endDate < bookingForm.value.startDate) {
+            showToast('Enddatum muss nach Startdatum liegen', 'error');
+            return;
+          }
+
+          try {
+            const response = await fetch(`${API_BASE}/bookings`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                party_id: parseInt(bookingForm.value.partyId),
+                start_date: bookingForm.value.startDate,
+                end_date: bookingForm.value.endDate,
+                note: bookingForm.value.note || null
+              })
+            });
+
+            if (response.ok) {
+              showToast('Buchung erfolgreich gespeichert');
+              bookingForm.value = { partyId: '', startDate: '', endDate: '', note: '' };
+              selectedParty.value = null;
+              await loadBookings();
+            } else {
+              const error = await response.json();
+              showToast(error.error || 'Fehler beim Speichern', 'error');
+            }
+          } catch (error) {
+            console.error('Error saving booking:', error);
+            showToast('Fehler beim Speichern der Buchung', 'error');
+          }
+        }
+
+        async function deleteBooking(id) {
+          if (!confirm('Buchung wirklich löschen?')) return;
+
+          try {
+            const response = await fetch(`${API_BASE}/bookings/${id}`, {
+              method: 'DELETE'
+            });
+
+            if (response.ok) {
+              showToast('Buchung gelöscht');
+              await loadBookings();
+            } else {
+              showToast('Fehler beim Löschen', 'error');
+            }
+          } catch (error) {
+            console.error('Error deleting booking:', error);
+            showToast('Fehler beim Löschen der Buchung', 'error');
+          }
+        }
+
+        // Lifecycle
+        onMounted(async () => {
+          await Promise.all([loadParties(), loadBookings()]);
+        });
+
+        return {
+          parties,
+          bookings,
+          currentDate,
+          selectedParty,
+          bookingForm,
+          weekdays,
+          monthYearDisplay,
+          calendarDays,
+          sortedBookings,
+          previousMonth,
+          nextMonth,
+          goToToday,
+          selectParty,
+          openBookingForm,
+          saveBooking,
+          deleteBooking,
+          formatDateRange,
+          toasts
+        };
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>

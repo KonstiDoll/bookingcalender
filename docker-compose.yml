@@ -1,14 +1,36 @@
-version: '3.8'
-
 services:
-  buchungskalender:
-    build: .
-    container_name: ferienwohnung-kalender
-    ports:
-      - "5000:5000"
-    volumes:
-      # Datenbank persistent speichern
-      - ./data:/data
-    restart: unless-stopped
+  # PostgreSQL Database
+  db:
+    image: postgres:16-alpine
+    container_name: ferienhaus-db
     environment:
-      - DATABASE=/data/bookings.db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ferienhaus
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # FastAPI Application
+  app:
+    build: .
+    container_name: ferienhaus-kalender
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/ferienhaus
+      DEBUG: "false"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

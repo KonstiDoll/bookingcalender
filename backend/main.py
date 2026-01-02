@@ -1,0 +1,237 @@
+"""
+Ferienhaus Kalender - FastAPI Backend
+Vacation rental booking calendar API with PostgreSQL
+"""
+from datetime import date
+from typing import Optional
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI, HTTPException, Depends
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+from pydantic import BaseModel, field_validator
+from sqlalchemy import select, and_, or_
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from database import get_db, init_db, Booking, Party
+
+
+# Pydantic Models
+class BookingCreate(BaseModel):
+    party_id: int
+    start_date: date
+    end_date: date
+    note: Optional[str] = None
+
+    @field_validator('end_date')
+    @classmethod
+    def end_date_after_start(cls, v, info):
+        if 'start_date' in info.data and v < info.data['start_date']:
+            raise ValueError('end_date must be after or equal to start_date')
+        return v
+
+    @field_validator('party_id')
+    @classmethod
+    def valid_party_id(cls, v):
+        if v < 1 or v > 5:
+            raise ValueError('party_id must be between 1 and 5')
+        return v
+
+
+class BookingResponse(BaseModel):
+    id: int
+    party_id: int
+    party_name: str
+    party_color: str
+    start_date: date
+    end_date: date
+    note: Optional[str]
+
+    class Config:
+        from_attributes = True
+
+
+class PartyResponse(BaseModel):
+    id: int
+    name: str
+    color: str
+
+    class Config:
+        from_attributes = True
+
+
+class MessageResponse(BaseModel):
+    message: str
+
+
+# Predefined parties with earth-tone colors
+PARTIES = [
+    {"id": 1, "name": "Familie Müller", "color": "#2D5A47"},   # Forest Green
+    {"id": 2, "name": "Familie Schmidt", "color": "#4A6B8A"},  # Ocean Slate
+    {"id": 3, "name": "Familie Weber", "color": "#C4703D"},    # Terracotta
+    {"id": 4, "name": "Familie Fischer", "color": "#6B4E71"},  # Wild Plum
+    {"id": 5, "name": "Familie Wagner", "color": "#B8860B"},   # Golden Amber
+]
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan - initialize database on startup"""
+    await init_db()
+    yield
+
+
+# FastAPI Application
+app = FastAPI(
+    title="Ferienhaus Kalender API",
+    description="Buchungskalender für Ferienwohnungen",
+    version="2.0.0",
+    lifespan=lifespan
+)
+
+# CORS Middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+# Helper functions
+def get_party_by_id(party_id: int) -> Optional[dict]:
+    """Get party info by ID"""
+    for party in PARTIES:
+        if party["id"] == party_id:
+            return party
+    return None
+
+
+async def check_booking_overlap(
+    db: AsyncSession,
+    start_date: date,
+    end_date: date,
+    exclude_id: Optional[int] = None
+) -> bool:
+    """Check if there's an overlapping booking"""
+    query = select(Booking).where(
+        and_(
+            Booking.start_date <= end_date,
+            Booking.end_date >= start_date
+        )
+    )
+    if exclude_id:
+        query = query.where(Booking.id != exclude_id)
+
+    result = await db.execute(query)
+    return result.scalar() is not None
+
+
+# API Routes
+@app.get("/api/parties", response_model=list[PartyResponse])
+async def get_parties():
+    """Get all available parties (families)"""
+    return PARTIES
+
+
+@app.get("/api/bookings", response_model=list[BookingResponse])
+async def get_bookings(db: AsyncSession = Depends(get_db)):
+    """Get all bookings with party information"""
+    result = await db.execute(
+        select(Booking).order_by(Booking.start_date)
+    )
+    bookings = result.scalars().all()
+
+    response = []
+    for booking in bookings:
+        party = get_party_by_id(booking.party_id)
+        response.append(BookingResponse(
+            id=booking.id,
+            party_id=booking.party_id,
+            party_name=party["name"] if party else "Unbekannt",
+            party_color=party["color"] if party else "#888888",
+            start_date=booking.start_date,
+            end_date=booking.end_date,
+            note=booking.note
+        ))
+
+    return response
+
+
+@app.post("/api/bookings", response_model=BookingResponse, status_code=201)
+async def create_booking(
+    booking: BookingCreate,
+    db: AsyncSession = Depends(get_db)
+):
+    """Create a new booking"""
+    # Validate party exists
+    party = get_party_by_id(booking.party_id)
+    if not party:
+        raise HTTPException(status_code=400, detail="Ungültige Familie")
+
+    # Check for overlapping bookings
+    if await check_booking_overlap(db, booking.start_date, booking.end_date):
+        raise HTTPException(
+            status_code=409,
+            detail="Es gibt bereits eine Buchung in diesem Zeitraum"
+        )
+
+    # Create booking
+    db_booking = Booking(
+        party_id=booking.party_id,
+        start_date=booking.start_date,
+        end_date=booking.end_date,
+        note=booking.note
+    )
+    db.add(db_booking)
+    await db.commit()
+    await db.refresh(db_booking)
+
+    return BookingResponse(
+        id=db_booking.id,
+        party_id=db_booking.party_id,
+        party_name=party["name"],
+        party_color=party["color"],
+        start_date=db_booking.start_date,
+        end_date=db_booking.end_date,
+        note=db_booking.note
+    )
+
+
+@app.delete("/api/bookings/{booking_id}", response_model=MessageResponse)
+async def delete_booking(
+    booking_id: int,
+    db: AsyncSession = Depends(get_db)
+):
+    """Delete a booking by ID"""
+    result = await db.execute(
+        select(Booking).where(Booking.id == booking_id)
+    )
+    booking = result.scalar()
+
+    if not booking:
+        raise HTTPException(status_code=404, detail="Buchung nicht gefunden")
+
+    await db.delete(booking)
+    await db.commit()
+
+    return MessageResponse(message="Buchung erfolgreich gelöscht")
+
+
+# Mount static files and serve frontend
+app.mount("/static", StaticFiles(directory="../frontend"), name="static")
+
+
+@app.get("/")
+async def serve_frontend():
+    """Serve the Vue frontend"""
+    return FileResponse("../frontend/index.html")
+
+
+# Health check endpoint
+@app.get("/health")
+async def health_check():
+    """Health check endpoint"""
+    return {"status": "healthy", "version": "2.0.0"}

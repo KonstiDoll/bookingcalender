@@ -1,24 +1,24 @@
-FROM python:3.11-slim
+FROM python:3.12-slim
 
 WORKDIR /app
 
-# Abhängigkeiten installieren
-COPY requirements.txt .
+# Install dependencies
+COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Anwendung kopieren
-COPY app.py .
-COPY static/ static/
+# Copy application
+COPY backend/ ./backend/
+COPY frontend/ ./frontend/
 
-# Datenverzeichnis erstellen
-RUN mkdir -p /data
+# Set working directory to backend
+WORKDIR /app/backend
 
-# Port freigeben
-EXPOSE 5000
+# Expose port
+EXPOSE 8000
 
-# Umgebungsvariablen
-ENV FLASK_APP=app.py
-ENV DATABASE=/data/bookings.db
+# Environment variables
+ENV PYTHONUNBUFFERED=1
+ENV DEBUG=false
 
-# Anwendung starten
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "app:app"]
+# Run with uvicorn
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

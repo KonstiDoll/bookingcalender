@@ -1,0 +1,124 @@
+import { ref, computed } from 'vue'
+import { bookings } from './useApi'
+
+const currentDate = ref(new Date())
+
+const weekdays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
+
+const monthNames = [
+  'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
+  'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'
+]
+
+export function useCalendar() {
+  const monthYearDisplay = computed(() => {
+    const month = monthNames[currentDate.value.getMonth()]
+    const year = currentDate.value.getFullYear()
+    return `${month} ${year}`
+  })
+
+  const calendarDays = computed(() => {
+    const year = currentDate.value.getFullYear()
+    const month = currentDate.value.getMonth()
+
+    const firstDay = new Date(year, month, 1)
+    const lastDay = new Date(year, month + 1, 0)
+
+    let startOffset = firstDay.getDay() - 1
+    if (startOffset < 0) startOffset = 6
+
+    const days = []
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    // Previous month days
+    for (let i = startOffset - 1; i >= 0; i--) {
+      const date = new Date(year, month, -i)
+      days.push(createDayObject(date, false, today))
+    }
+
+    // Current month days
+    for (let i = 1; i <= lastDay.getDate(); i++) {
+      const date = new Date(year, month, i)
+      days.push(createDayObject(date, true, today))
+    }
+
+    // Next month days
+    const remaining = 42 - days.length
+    for (let i = 1; i <= remaining; i++) {
+      const date = new Date(year, month + 1, i)
+      days.push(createDayObject(date, false, today))
+    }
+
+    return days
+  })
+
+  function createDayObject(date, isCurrentMonth, today) {
+    const dateStr = formatDateISO(date)
+    const dayBookings = getBookingsForDate(dateStr)
+
+    return {
+      date: dateStr,
+      dayNumber: date.getDate(),
+      isCurrentMonth,
+      isToday: date.getTime() === today.getTime(),
+      bookings: dayBookings
+    }
+  }
+
+  function getBookingsForDate(dateStr) {
+    return bookings.value
+      .filter(b => dateStr >= b.start_date && dateStr <= b.end_date)
+      .map(b => {
+        let position = 'middle'
+        if (b.start_date === dateStr && b.end_date === dateStr) {
+          position = 'single'
+        } else if (b.start_date === dateStr) {
+          position = 'start'
+        } else if (b.end_date === dateStr) {
+          position = 'end'
+        }
+
+        return {
+          id: b.id,
+          color: b.party_color,
+          partyName: b.party_name,
+          position
+        }
+      })
+  }
+
+  function formatDateISO(date) {
+    return date.toISOString().split('T')[0]
+  }
+
+  function previousMonth() {
+    currentDate.value = new Date(
+      currentDate.value.getFullYear(),
+      currentDate.value.getMonth() - 1,
+      1
+    )
+  }
+
+  function nextMonth() {
+    currentDate.value = new Date(
+      currentDate.value.getFullYear(),
+      currentDate.value.getMonth() + 1,
+      1
+    )
+  }
+
+  function goToToday() {
+    currentDate.value = new Date()
+  }
+
+  return {
+    currentDate,
+    weekdays,
+    monthYearDisplay,
+    calendarDays,
+    previousMonth,
+    nextMonth,
+    goToToday
+  }
+}

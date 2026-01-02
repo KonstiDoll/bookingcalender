@@ -23,6 +23,11 @@ env/
 *.swp
 *.swo
 
+# Node/Frontend
+node_modules/
+dist/
+*.local
+
 # OS
 .DS_Store
 Thumbs.db

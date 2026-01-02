@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  buchungskalender:
+    build: .
+    container_name: ferienwohnung-kalender
+    ports:
+      - "5000:5000"
+    volumes:
+      # Datenbank persistent speichern
+      - ./data:/data
+    restart: unless-stopped
+    environment:
+      - DATABASE=/data/bookings.db

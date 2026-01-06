@@ -1,23 +1,24 @@
-import { ref, computed } from 'vue'
+import { ref, computed, type Ref, type ComputedRef } from 'vue'
 import { bookings } from './useApi'
+import type { CalendarDay, DayBooking, BookingPosition } from '../types'
 
-const currentDate = ref(new Date())
+const currentDate: Ref<Date> = ref(new Date())
 
-const weekdays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
+const weekdays: readonly string[] = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
 
-const monthNames = [
+const monthNames: readonly string[] = [
   'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
   'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'
 ]
 
 export function useCalendar() {
-  const monthYearDisplay = computed(() => {
+  const monthYearDisplay: ComputedRef<string> = computed(() => {
     const month = monthNames[currentDate.value.getMonth()]
     const year = currentDate.value.getFullYear()
     return `${month} ${year}`
   })
 
-  const calendarDays = computed(() => {
+  const calendarDays: ComputedRef<CalendarDay[]> = computed(() => {
     const year = currentDate.value.getFullYear()
     const month = currentDate.value.getMonth()
 
@@ -27,7 +28,7 @@ export function useCalendar() {
     let startOffset = firstDay.getDay() - 1
     if (startOffset < 0) startOffset = 6
 
-    const days = []
+    const days: CalendarDay[] = []
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
@@ -53,7 +54,7 @@ export function useCalendar() {
     return days
   })
 
-  function createDayObject(date, isCurrentMonth, today) {
+  function createDayObject(date: Date, isCurrentMonth: boolean, today: Date): CalendarDay {
     const dateStr = formatDateISO(date)
     const dayBookings = getBookingsForDate(dateStr)
 
@@ -66,11 +67,11 @@ export function useCalendar() {
     }
   }
 
-  function getBookingsForDate(dateStr) {
+  function getBookingsForDate(dateStr: string): DayBooking[] {
     return bookings.value
       .filter(b => dateStr >= b.start_date && dateStr <= b.end_date)
       .map(b => {
-        let position = 'middle'
+        let position: BookingPosition = 'middle'
         if (b.start_date === dateStr && b.end_date === dateStr) {
           position = 'single'
         } else if (b.start_date === dateStr) {
@@ -88,11 +89,11 @@ export function useCalendar() {
       })
   }
 
-  function formatDateISO(date) {
+  function formatDateISO(date: Date): string {
     return date.toISOString().split('T')[0]
   }
 
-  function previousMonth() {
+  function previousMonth(): void {
     currentDate.value = new Date(
       currentDate.value.getFullYear(),
       currentDate.value.getMonth() - 1,
@@ -100,7 +101,7 @@ export function useCalendar() {
     )
   }
 
-  function nextMonth() {
+  function nextMonth(): void {
     currentDate.value = new Date(
       currentDate.value.getFullYear(),
       currentDate.value.getMonth() + 1,
@@ -108,7 +109,7 @@ export function useCalendar() {
     )
   }
 
-  function goToToday() {
+  function goToToday(): void {
     currentDate.value = new Date()
   }
 

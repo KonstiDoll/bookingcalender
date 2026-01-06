@@ -1,27 +1,34 @@
-<script setup>
-import { ref, watch, computed, onMounted } from 'vue'
+<script setup lang="ts">
+import { ref, watch, computed, onMounted, type Ref } from 'vue'
 import { parties, useApi } from '../composables/useApi'
 import { useAuth } from '../composables/useAuth'
 import { useToast } from '../composables/useToast'
 
-const props = defineProps({
-  selectionStart: {
-    type: String,
-    default: ''
-  },
-  selectionEnd: {
-    type: String,
-    default: ''
-  }
+interface BookingFormData {
+  partyId: number | ''
+  startDate: string
+  endDate: string
+  note: string
+}
+
+const props = withDefaults(defineProps<{
+  selectionStart?: string
+  selectionEnd?: string
+}>(), {
+  selectionStart: '',
+  selectionEnd: ''
 })
 
-const emit = defineEmits(['saved', 'selectionChange'])
+const emit = defineEmits<{
+  saved: []
+  selectionChange: [start: string, end: string]
+}>()
 
 const { createBooking } = useApi()
 const { currentUser, isAdmin } = useAuth()
 const { success, error } = useToast()
 
-const form = ref({
+const form: Ref<BookingFormData> = ref({
   partyId: '',
   startDate: '',
   endDate: '',
@@ -44,26 +51,28 @@ onMounted(() => {
   }
 })
 
-watch(() => props.selectionStart, (newVal) => {
+watch(() => props.selectionStart, (newVal: string) => {
   form.value.startDate = newVal
 })
 
-watch(() => props.selectionEnd, (newVal) => {
+watch(() => props.selectionEnd, (newVal: string) => {
   form.value.endDate = newVal
 })
 
 // Emit changes when form dates change
-function onStartDateChange(e) {
-  form.value.startDate = e.target.value
+function onStartDateChange(e: Event): void {
+  const target = e.target as HTMLInputElement
+  form.value.startDate = target.value
   emit('selectionChange', form.value.startDate, form.value.endDate)
 }
 
-function onEndDateChange(e) {
-  form.value.endDate = e.target.value
+function onEndDateChange(e: Event): void {
+  const target = e.target as HTMLInputElement
+  form.value.endDate = target.value
   emit('selectionChange', form.value.startDate, form.value.endDate)
 }
 
-async function handleSubmit() {
+async function handleSubmit(): Promise<void> {
   if (!form.value.partyId || !form.value.startDate || !form.value.endDate) {
     error('Bitte alle Pflichtfelder ausfüllen')
     return
@@ -76,7 +85,7 @@ async function handleSubmit() {
 
   try {
     await createBooking({
-      party_id: parseInt(form.value.partyId),
+      party_id: form.value.partyId as number,
       start_date: form.value.startDate,
       end_date: form.value.endDate,
       note: form.value.note || null
@@ -88,7 +97,7 @@ async function handleSubmit() {
     form.value = { partyId: keepPartyId, startDate: '', endDate: '', note: '' }
     emit('saved')
   } catch (err) {
-    error(err.message)
+    error(err instanceof Error ? err.message : 'Fehler beim Speichern')
   }
 }
 </script>

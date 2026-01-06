@@ -1,9 +1,10 @@
-import { ref } from 'vue'
+import { ref, type Ref } from 'vue'
+import type { Toast, ToastType } from '../types'
 
-const toasts = ref([])
+const toasts: Ref<Toast[]> = ref([])
 
 export function useToast() {
-  function showToast(message, type = 'success') {
+  function showToast(message: string, type: ToastType = 'success'): void {
     const id = Date.now()
     toasts.value.push({ id, message, type })
 
@@ -12,11 +13,11 @@ export function useToast() {
     }, 3000)
   }
 
-  function success(message) {
+  function success(message: string): void {
     showToast(message, 'success')
   }
 
-  function error(message) {
+  function error(message: string): void {
     showToast(message, 'error')
   }
 

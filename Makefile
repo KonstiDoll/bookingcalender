@@ -1,4 +1,4 @@
-.PHONY: install install-frontend dev dev-backend dev-frontend run docker-up docker-down clean
+.PHONY: install install-frontend dev dev-backend dev-frontend run docker-up docker-down clean migrate migrate-new migrate-down test test-backend test-frontend
 
 # Install all dependencies
 install: install-backend install-frontend
@@ -38,6 +38,26 @@ docker-up:
 # Stop Docker containers
 docker-down:
 	docker compose down
+
+# Testing
+test: test-backend test-frontend
+
+test-backend:
+	cd backend && . .venv/bin/activate && python -m pytest
+
+test-frontend:
+	cd frontend && npm run test
+
+# Database migrations
+migrate:
+	cd backend && . .venv/bin/activate && alembic upgrade head
+
+migrate-new:
+	@read -p "Migration name: " name; \
+	cd backend && . .venv/bin/activate && alembic revision --autogenerate -m "$$name"
+
+migrate-down:
+	cd backend && . .venv/bin/activate && alembic downgrade -1
 
 # Clean up
 clean:

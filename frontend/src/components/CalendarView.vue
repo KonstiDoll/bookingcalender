@@ -1,19 +1,19 @@
-<script setup>
-import { computed } from 'vue'
+<script setup lang="ts">
 import { useCalendar } from '../composables/useCalendar'
 
-const props = defineProps({
-  selectionStart: {
-    type: String,
-    default: ''
-  },
-  selectionEnd: {
-    type: String,
-    default: ''
-  }
+type SelectionPosition = 'start' | 'middle' | 'end' | 'single' | null
+
+const props = withDefaults(defineProps<{
+  selectionStart?: string
+  selectionEnd?: string
+}>(), {
+  selectionStart: '',
+  selectionEnd: ''
 })
 
-const emit = defineEmits(['dayClick'])
+const emit = defineEmits<{
+  dayClick: [date: string]
+}>()
 
 const {
   weekdays,
@@ -24,7 +24,7 @@ const {
   goToToday
 } = useCalendar()
 
-function isInSelection(date) {
+function isInSelection(date: string): boolean {
   if (!props.selectionStart) return false
 
   const start = props.selectionStart
@@ -33,7 +33,7 @@ function isInSelection(date) {
   return date >= start && date <= end
 }
 
-function getSelectionPosition(date) {
+function getSelectionPosition(date: string): SelectionPosition {
   if (!isInSelection(date)) return null
 
   const start = props.selectionStart

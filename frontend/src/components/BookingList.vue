@@ -1,23 +1,24 @@
-<script setup>
-import { computed } from 'vue'
+<script setup lang="ts">
+import { computed, type ComputedRef } from 'vue'
 import { bookings, useApi } from '../composables/useApi'
 import { useAuth } from '../composables/useAuth'
 import { useToast } from '../composables/useToast'
+import type { Booking } from '../types'
 
 const { deleteBooking } = useApi()
 const { canModifyBooking } = useAuth()
 const { success, error } = useToast()
 
-const sortedBookings = computed(() => {
+const sortedBookings: ComputedRef<Booking[]> = computed(() => {
   return [...bookings.value].sort((a, b) =>
-    new Date(a.start_date) - new Date(b.start_date)
+    new Date(a.start_date).getTime() - new Date(b.start_date).getTime()
   )
 })
 
-function formatDateRange(start, end) {
+function formatDateRange(start: string, end: string): string {
   const startDate = new Date(start)
   const endDate = new Date(end)
-  const options = { day: 'numeric', month: 'short' }
+  const options: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short' }
 
   if (start === end) {
     return startDate.toLocaleDateString('de-DE', { ...options, year: 'numeric' })
@@ -28,14 +29,14 @@ function formatDateRange(start, end) {
   return `${startFormatted} – ${endFormatted}`
 }
 
-async function handleDelete(id) {
+async function handleDelete(id: number): Promise<void> {
   if (!confirm('Buchung wirklich löschen?')) return
 
   try {
     await deleteBooking(id)
     success('Buchung gelöscht')
   } catch (err) {
-    error(err.message)
+    error(err instanceof Error ? err.message : 'Fehler beim Löschen')
   }
 }
 </script>

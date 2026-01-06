@@ -1,15 +1,17 @@
-import { ref } from 'vue'
+import { ref, type Ref } from 'vue'
 import { useAuth } from './useAuth'
+import type { Party, Booking, BookingCreate } from '../types'
 
 const API_BASE = '/api'
 
-export const parties = ref([])
-export const bookings = ref([])
+// Reactive state - shared across all components
+export const parties: Ref<Party[]> = ref([])
+export const bookings: Ref<Booking[]> = ref([])
 
 export function useApi() {
   const { getAuthHeaders } = useAuth()
 
-  async function loadParties() {
+  async function loadParties(): Promise<void> {
     try {
       const response = await fetch(`${API_BASE}/parties`, {
         headers: getAuthHeaders()
@@ -26,7 +28,7 @@ export function useApi() {
     }
   }
 
-  async function loadBookings() {
+  async function loadBookings(): Promise<void> {
     try {
       const response = await fetch(`${API_BASE}/bookings`, {
         headers: getAuthHeaders()
@@ -43,7 +45,7 @@ export function useApi() {
     }
   }
 
-  async function createBooking(booking) {
+  async function createBooking(booking: BookingCreate): Promise<Booking> {
     const response = await fetch(`${API_BASE}/bookings`, {
       method: 'POST',
       headers: {
@@ -62,7 +64,7 @@ export function useApi() {
     return response.json()
   }
 
-  async function deleteBooking(id) {
+  async function deleteBooking(id: number): Promise<void> {
     const response = await fetch(`${API_BASE}/bookings/${id}`, {
       method: 'DELETE',
       headers: getAuthHeaders()

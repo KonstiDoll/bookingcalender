@@ -1,18 +1,25 @@
-<script setup>
-import { ref } from 'vue'
+<script setup lang="ts">
+import { ref, type Ref } from 'vue'
 import { useAuth } from '../composables/useAuth'
 
-const emit = defineEmits(['login-success'])
+interface UserOption {
+  value: string
+  label: string
+}
+
+const emit = defineEmits<{
+  'login-success': []
+}>()
 
 const { login } = useAuth()
 
-const username = ref('')
-const password = ref('')
-const errorMessage = ref('')
-const loading = ref(false)
+const username: Ref<string> = ref('')
+const password: Ref<string> = ref('')
+const errorMessage: Ref<string> = ref('')
+const loading: Ref<boolean> = ref(false)
 
 // Available users for dropdown
-const users = [
+const users: UserOption[] = [
   { value: 'Admin', label: 'Admin' },
   { value: 'Siggi & Mausi', label: 'Siggi & Mausi' },
   { value: 'Silke & Wolfi & Zoe', label: 'Silke & Wolfi & Zoe' },
@@ -20,7 +27,7 @@ const users = [
   { value: 'Extern', label: 'Extern' }
 ]
 
-async function handleLogin() {
+async function handleLogin(): Promise<void> {
   console.log('handleLogin called', { username: username.value, password: password.value })
 
   if (!username.value || !password.value) {
@@ -36,9 +43,9 @@ async function handleLogin() {
     const result = await login(username.value, password.value)
     console.log('Login successful:', result)
     emit('login-success')
-  } catch (error) {
-    console.error('Login error:', error)
-    errorMessage.value = error.message || 'Ein Fehler ist aufgetreten'
+  } catch (err) {
+    console.error('Login error:', err)
+    errorMessage.value = err instanceof Error ? err.message : 'Ein Fehler ist aufgetreten'
   } finally {
     loading.value = false
   }

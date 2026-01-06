@@ -1,5 +1,5 @@
-<script setup>
-import { ref, onMounted } from 'vue'
+<script setup lang="ts">
+import { ref, onMounted, type Ref } from 'vue'
 import { useApi } from './composables/useApi'
 import { useAuth } from './composables/useAuth'
 import { useToast } from './composables/useToast'
@@ -14,11 +14,11 @@ const { loadParties, loadBookings } = useApi()
 const { isAuthenticated, currentUser, isAdmin, verifySession, logout } = useAuth()
 const { error } = useToast()
 
-const selectionStart = ref('')
-const selectionEnd = ref('')
-const initializing = ref(true)
+const selectionStart: Ref<string> = ref('')
+const selectionEnd: Ref<string> = ref('')
+const initializing: Ref<boolean> = ref(true)
 
-function handleDayClick(date) {
+function handleDayClick(date: string): void {
   if (!selectionStart.value) {
     // First click - set start date
     selectionStart.value = date
@@ -33,33 +33,33 @@ function handleDayClick(date) {
   }
 }
 
-function handleSelectionChange(start, end) {
+function handleSelectionChange(start: string, end: string): void {
   selectionStart.value = start
   selectionEnd.value = end
 }
 
-function handleBookingSaved() {
+function handleBookingSaved(): void {
   selectionStart.value = ''
   selectionEnd.value = ''
 }
 
-async function loadInitialData() {
+async function loadInitialData(): Promise<void> {
   try {
     await Promise.all([loadParties(), loadBookings()])
   } catch (err) {
     error('Fehler beim Laden der Daten')
     // If unauthorized, logout
-    if (err.message?.includes('401') || err.message?.includes('Unauthorized')) {
+    if (err instanceof Error && err.message?.includes('401')) {
       logout()
     }
   }
 }
 
-async function handleLoginSuccess() {
+async function handleLoginSuccess(): Promise<void> {
   await loadInitialData()
 }
 
-function handleLogout() {
+function handleLogout(): void {
   logout()
   selectionStart.value = ''
   selectionEnd.value = ''

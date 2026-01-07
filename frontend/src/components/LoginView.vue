@@ -58,7 +58,7 @@ async function handleLogin(): Promise<void> {
       <!-- Header -->
       <div class="text-center mb-8">
         <h1 class="font-display text-3xl font-normal tracking-tight text-text-primary mb-2">
-          Ferienhaus <span class="italic font-light">Kalender</span>
+          3Mädel<span class="italic font-light">Hausen</span>
         </h1>
         <p class="text-text-secondary">
           Bitte melden Sie sich an

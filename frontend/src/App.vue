@@ -108,7 +108,7 @@ onMounted(async () => {
     <header class="text-center mb-12 pt-8 relative">
       <div class="absolute top-0 left-1/2 -translate-x-1/2 w-15 h-1 bg-gradient-to-r from-family-1 to-family-3 rounded-full" />
       <h1 class="font-display text-4xl lg:text-5xl font-normal tracking-tight text-text-primary mb-2">
-        Ferienhaus <span class="italic font-light">Kalender</span>
+        3Mädel<span class="italic font-light">Hausen</span>
       </h1>
       <div class="flex items-center justify-center gap-4 mt-2">
         <p class="text-text-secondary font-light">

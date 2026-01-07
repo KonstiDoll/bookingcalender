@@ -89,13 +89,12 @@ class UserResponse(BaseModel):
     username: str
 
 
-# Predefined parties with earth-tone colors
+# Predefined parties with distinct colors
 PARTIES = [
-    {"id": 1, "name": "Siggi & Mausi", "color": "#2D5A47"},   # Forest Green
-    {"id": 2, "name": "Silke & Wolfi & Zoe", "color": "#4A6B8A"},  # Ocean Slate
-    {"id": 3, "name": "Claudi & Wolfram", "color": "#C4703D"},    # Terracotta
-    {"id": 4, "name": "Extern", "color": "#6B4E71"}  # Wild Plum
-    # {"id": 5, "name": "Familie Wagner", "color": "#B8860B"},   # Golden Amber
+    {"id": 1, "name": "Siggi & Mausi", "color": "#E63946"},      # Rot
+    {"id": 2, "name": "Silke & Wolfi & Zoe", "color": "#2A9D8F"}, # Türkis
+    {"id": 3, "name": "Claudi & Wolfram", "color": "#E9C46A"},    # Gold
+    {"id": 4, "name": "Extern", "color": "#7B68EE"}               # Lila
 ]
 
 
@@ -108,8 +107,8 @@ async def lifespan(app: FastAPI):
 
 # FastAPI Application
 app = FastAPI(
-    title="Ferienhaus Kalender API",
-    description="Buchungskalender für Ferienwohnungen",
+    title="3MädelHausen API",
+    description="Buchungskalender für 3MädelHausen",
     version="2.0.0",
     lifespan=lifespan
 )

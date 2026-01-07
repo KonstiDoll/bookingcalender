@@ -367,7 +367,7 @@ async def delete_booking(
 
 
 # Mount static files and serve frontend
-app.mount("/static", StaticFiles(directory="../frontend"), name="static")
+app.mount("/assets", StaticFiles(directory="../frontend/assets"), name="assets")
 
 
 @app.get("/")

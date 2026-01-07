@@ -7,6 +7,7 @@ import type { Booking } from './types'
 import LoginView from './components/LoginView.vue'
 import FamilyLegend from './components/FamilyLegend.vue'
 import CalendarView from './components/CalendarView.vue'
+import YearOverview from './components/YearOverview.vue'
 import BookingForm from './components/BookingForm.vue'
 import BookingList from './components/BookingList.vue'
 import ToastContainer from './components/ToastContainer.vue'
@@ -15,10 +16,13 @@ const { loadParties, loadBookings } = useApi()
 const { isAuthenticated, currentUser, isAdmin, verifySession, logout } = useAuth()
 const { error } = useToast()
 
+type ViewMode = 'month' | 'year'
+
 const selectionStart: Ref<string> = ref('')
 const selectionEnd: Ref<string> = ref('')
 const initializing: Ref<boolean> = ref(true)
 const editingBooking: Ref<Booking | null> = ref(null)
+const viewMode: Ref<ViewMode> = ref('month')
 
 function handleDayClick(date: string): void {
   if (!selectionStart.value) {
@@ -105,7 +109,7 @@ onMounted(async () => {
   <!-- Main App -->
   <div v-else class="min-h-screen p-4 lg:p-6 max-w-7xl mx-auto relative z-10">
     <!-- Header -->
-    <header class="text-center mb-12 pt-8 relative">
+    <header class="text-center mb-6 pt-8 relative">
       <div class="absolute top-0 left-1/2 -translate-x-1/2 w-15 h-1 bg-gradient-to-r from-family-1 to-family-3 rounded-full" />
       <h1 class="font-display text-4xl lg:text-5xl font-normal tracking-tight text-text-primary mb-2">
         3Mädel<span class="italic font-light">Hausen</span>
@@ -127,8 +131,32 @@ onMounted(async () => {
     <!-- Family Legend -->
     <FamilyLegend />
 
+    <!-- View Mode Toggle (Admin only) -->
+    <div v-if="isAdmin" class="flex justify-center mb-6">
+      <div class="inline-flex rounded-lg border border-black/15 bg-white p-1">
+        <button
+          @click="viewMode = 'month'"
+          class="px-4 py-2 rounded-md text-sm font-medium transition-all"
+          :class="viewMode === 'month' ? 'bg-family-1 text-white' : 'text-text-secondary hover:text-text-primary'"
+        >
+          Monatsansicht
+        </button>
+        <button
+          @click="viewMode = 'year'"
+          class="px-4 py-2 rounded-md text-sm font-medium transition-all"
+          :class="viewMode === 'year' ? 'bg-family-1 text-white' : 'text-text-secondary hover:text-text-primary'"
+        >
+          Jahresübersicht
+        </button>
+      </div>
+    </div>
+
     <!-- Main Content -->
-    <div class="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6">
+    <!-- Year Overview (Admin only) -->
+    <YearOverview v-if="viewMode === 'year' && isAdmin" />
+
+    <!-- Monthly View with Sidebar -->
+    <div v-else class="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6">
       <!-- Calendar -->
       <CalendarView
         :selection-start="selectionStart"

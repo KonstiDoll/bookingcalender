@@ -2,6 +2,7 @@
 Ferienhaus Kalender - FastAPI Backend
 Vacation rental booking calendar API with PostgreSQL
 """
+import os
 from datetime import date
 from typing import Optional
 from contextlib import asynccontextmanager
@@ -367,13 +368,19 @@ async def delete_booking(
 
 
 # Mount static files and serve frontend
-app.mount("/assets", StaticFiles(directory="../frontend/assets"), name="assets")
+# Only mount if frontend directory exists (not during tests)
+frontend_assets_path = os.path.join(os.path.dirname(__file__), "../frontend/assets")
+if os.path.exists(frontend_assets_path):
+    app.mount("/assets", StaticFiles(directory="../frontend/assets"), name="assets")
 
 
 @app.get("/")
 async def serve_frontend():
     """Serve the Vue frontend"""
-    return FileResponse("../frontend/index.html")
+    frontend_index_path = os.path.join(os.path.dirname(__file__), "../frontend/index.html")
+    if os.path.exists(frontend_index_path):
+        return FileResponse(frontend_index_path)
+    return {"message": "Frontend not built. Run 'npm run build' in frontend directory."}
 
 
 # Health check endpoint

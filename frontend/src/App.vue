@@ -3,6 +3,7 @@ import { ref, onMounted, type Ref } from 'vue'
 import { useApi } from './composables/useApi'
 import { useAuth } from './composables/useAuth'
 import { useToast } from './composables/useToast'
+import type { Booking } from './types'
 import LoginView from './components/LoginView.vue'
 import FamilyLegend from './components/FamilyLegend.vue'
 import CalendarView from './components/CalendarView.vue'
@@ -17,6 +18,7 @@ const { error } = useToast()
 const selectionStart: Ref<string> = ref('')
 const selectionEnd: Ref<string> = ref('')
 const initializing: Ref<boolean> = ref(true)
+const editingBooking: Ref<Booking | null> = ref(null)
 
 function handleDayClick(date: string): void {
   if (!selectionStart.value) {
@@ -39,6 +41,17 @@ function handleSelectionChange(start: string, end: string): void {
 }
 
 function handleBookingSaved(): void {
+  selectionStart.value = ''
+  selectionEnd.value = ''
+  editingBooking.value = null
+}
+
+function handleEditBooking(booking: Booking): void {
+  editingBooking.value = booking
+}
+
+function handleEditCancelled(): void {
+  editingBooking.value = null
   selectionStart.value = ''
   selectionEnd.value = ''
 }
@@ -128,10 +141,12 @@ onMounted(async () => {
         <BookingForm
           :selection-start="selectionStart"
           :selection-end="selectionEnd"
+          :editing-booking="editingBooking"
           @saved="handleBookingSaved"
+          @cancelled="handleEditCancelled"
           @selection-change="handleSelectionChange"
         />
-        <BookingList />
+        <BookingList @edit="handleEditBooking" />
       </aside>
     </div>
 

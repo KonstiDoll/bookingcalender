@@ -276,6 +276,69 @@ async def create_booking(
     )
 
 
+@app.put("/api/bookings/{booking_id}", response_model=BookingResponse)
+async def update_booking(
+    booking_id: int,
+    booking_data: BookingCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Update a booking by ID - requires authentication and authorization"""
+    result = await db.execute(
+        select(Booking).where(Booking.id == booking_id)
+    )
+    booking = result.scalar()
+
+    if not booking:
+        raise HTTPException(status_code=404, detail="Buchung nicht gefunden")
+
+    # Check authorization: users can only update their own party's bookings
+    if not can_modify_booking(current_user, booking.party_id):
+        raise HTTPException(
+            status_code=403,
+            detail="Sie können nur Ihre eigenen Buchungen bearbeiten"
+        )
+
+    # If changing party, check authorization for new party too
+    if booking_data.party_id != booking.party_id:
+        if not can_modify_booking(current_user, booking_data.party_id):
+            raise HTTPException(
+                status_code=403,
+                detail="Sie können keine Buchungen für andere Familien erstellen"
+            )
+
+    # Validate new party exists
+    party = get_party_by_id(booking_data.party_id)
+    if not party:
+        raise HTTPException(status_code=400, detail="Ungültige Familie")
+
+    # Check for overlapping bookings (exclude current booking)
+    if await check_booking_overlap(db, booking_data.start_date, booking_data.end_date, exclude_id=booking_id):
+        raise HTTPException(
+            status_code=409,
+            detail="Es gibt bereits eine Buchung in diesem Zeitraum"
+        )
+
+    # Update booking
+    booking.party_id = booking_data.party_id
+    booking.start_date = booking_data.start_date
+    booking.end_date = booking_data.end_date
+    booking.note = booking_data.note
+
+    await db.commit()
+    await db.refresh(booking)
+
+    return BookingResponse(
+        id=booking.id,
+        party_id=booking.party_id,
+        party_name=party["name"],
+        party_color=party["color"],
+        start_date=booking.start_date,
+        end_date=booking.end_date,
+        note=booking.note
+    )
+
+
 @app.delete("/api/bookings/{booking_id}", response_model=MessageResponse)
 async def delete_booking(
     booking_id: int,

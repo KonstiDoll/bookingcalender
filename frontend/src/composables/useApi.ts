@@ -64,6 +64,26 @@ export function useApi() {
     return response.json()
   }
 
+  async function updateBooking(id: number, booking: BookingCreate): Promise<Booking> {
+    const response = await fetch(`${API_BASE}/bookings/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeaders()
+      },
+      body: JSON.stringify(booking)
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.detail || 'Fehler beim Aktualisieren')
+    }
+
+    const result = await response.json()
+    await loadBookings()
+    return result
+  }
+
   async function deleteBooking(id: number): Promise<void> {
     const response = await fetch(`${API_BASE}/bookings/${id}`, {
       method: 'DELETE',
@@ -84,6 +104,7 @@ export function useApi() {
     loadParties,
     loadBookings,
     createBooking,
+    updateBooking,
     deleteBooking
   }
 }

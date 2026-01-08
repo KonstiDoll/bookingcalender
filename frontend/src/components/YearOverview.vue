@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, type Ref, type ComputedRef } from 'vue'
-import { bookings } from '../composables/useApi'
+import { useApi } from '../composables/useApi'
 import type { Booking } from '../types'
+
+const { bookings } = useApi()
 
 const currentYear: Ref<number> = ref(new Date().getFullYear())
 

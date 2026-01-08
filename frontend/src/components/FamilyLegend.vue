@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { parties } from '../composables/useApi'
+import { useApi } from '../composables/useApi'
+
+const { parties } = useApi()
 </script>
 
 <template>

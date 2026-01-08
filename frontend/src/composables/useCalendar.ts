@@ -1,5 +1,5 @@
 import { ref, computed, type Ref, type ComputedRef } from 'vue'
-import { bookings } from './useApi'
+import { useApi } from './useApi'
 import type { CalendarDay, DayBooking, BookingPosition } from '../types'
 
 const currentDate: Ref<Date> = ref(new Date())
@@ -12,6 +12,7 @@ const monthNames: readonly string[] = [
 ]
 
 export function useCalendar() {
+  const { bookings } = useApi()
   const monthYearDisplay: ComputedRef<string> = computed(() => {
     const month = monthNames[currentDate.value.getMonth()]
     const year = currentDate.value.getFullYear()

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, computed, onMounted, type Ref } from 'vue'
-import { parties, useApi } from '../composables/useApi'
+import { useApi } from '../composables/useApi'
 import { useAuth } from '../composables/useAuth'
 import { useToast } from '../composables/useToast'
 import type { Booking } from '../types'
@@ -28,7 +28,7 @@ const emit = defineEmits<{
   selectionChange: [start: string, end: string]
 }>()
 
-const { createBooking, updateBooking } = useApi()
+const { parties, createBooking, updateBooking } = useApi()
 const { currentUser, isAdmin } = useAuth()
 const { success, error } = useToast()
 

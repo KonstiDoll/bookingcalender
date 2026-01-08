@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, type ComputedRef } from 'vue'
-import { bookings, useApi } from '../composables/useApi'
+import { useApi } from '../composables/useApi'
 import { useAuth } from '../composables/useAuth'
 import { useToast } from '../composables/useToast'
 import type { Booking } from '../types'
@@ -9,7 +9,7 @@ const emit = defineEmits<{
   edit: [booking: Booking]
 }>()
 
-const { deleteBooking } = useApi()
+const { bookings, deleteBooking } = useApi()
 const { canModifyBooking } = useAuth()
 const { success, error } = useToast()
 

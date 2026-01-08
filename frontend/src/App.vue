@@ -21,6 +21,7 @@ type ViewMode = 'month' | 'year'
 const selectionStart: Ref<string> = ref('')
 const selectionEnd: Ref<string> = ref('')
 const initializing: Ref<boolean> = ref(true)
+const dataLoaded: Ref<boolean> = ref(false)
 const editingBooking: Ref<Booking | null> = ref(null)
 const viewMode: Ref<ViewMode> = ref('month')
 
@@ -63,6 +64,7 @@ function handleEditCancelled(): void {
 async function loadInitialData(): Promise<void> {
   try {
     await Promise.all([loadParties(), loadBookings()])
+    dataLoaded.value = true
   } catch (err) {
     error('Fehler beim Laden der Daten')
     // If unauthorized, logout
@@ -73,11 +75,13 @@ async function loadInitialData(): Promise<void> {
 }
 
 async function handleLoginSuccess(): Promise<void> {
+  dataLoaded.value = false
   await loadInitialData()
 }
 
 function handleLogout(): void {
   logout()
+  dataLoaded.value = false
   selectionStart.value = ''
   selectionEnd.value = ''
 }
@@ -106,8 +110,13 @@ onMounted(async () => {
     @login-success="handleLoginSuccess"
   />
 
+  <!-- Loading Data State -->
+  <div v-else-if="isAuthenticated && !dataLoaded" class="min-h-screen flex items-center justify-center">
+    <div class="text-text-secondary">Daten werden geladen...</div>
+  </div>
+
   <!-- Main App -->
-  <div v-else class="min-h-screen p-4 lg:p-6 max-w-7xl mx-auto relative z-10">
+  <div v-else-if="isAuthenticated && dataLoaded" class="min-h-screen p-4 lg:p-6 max-w-7xl mx-auto relative z-10">
     <!-- Header -->
     <header class="text-center mb-6 pt-8 relative">
       <div class="absolute top-0 left-1/2 -translate-x-1/2 w-15 h-1 bg-gradient-to-r from-family-1 to-family-3 rounded-full" />

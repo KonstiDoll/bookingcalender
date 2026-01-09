@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, type Ref } from 'vue'
 import { useAuth } from '../composables/useAuth'
+import backgroundImageUrl from '../assets/IMG_1470.jpeg?url'
 
 interface UserOption {
   value: string
@@ -49,7 +50,7 @@ async function handleLogin(): Promise<void> {
 <template>
   <div class="login-container" :class="{ 'fade-out': isLoggedIn }">
     <!-- Background Image -->
-    <div class="background-image"></div>
+    <div class="background-image" :style="{ backgroundImage: `url(${backgroundImageUrl})` }"></div>
 
     <!-- Overlay -->
     <div class="background-overlay"></div>
@@ -145,7 +146,6 @@ async function handleLogin(): Promise<void> {
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: url('/IMG_1470.jpeg');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;

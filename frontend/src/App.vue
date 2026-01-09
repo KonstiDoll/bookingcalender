@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, type Ref } from 'vue'
+import { ref, watch, onMounted, type Ref } from 'vue'
 import { useApi } from './composables/useApi'
 import { useAuth } from './composables/useAuth'
 import { useToast } from './composables/useToast'
@@ -62,21 +62,20 @@ function handleEditCancelled(): void {
 }
 
 async function loadInitialData(): Promise<void> {
+  dataLoaded.value = false
   try {
     await Promise.all([loadParties(), loadBookings()])
-    dataLoaded.value = true
   } catch (err) {
     error('Fehler beim Laden der Daten')
     // If unauthorized, logout
     if (err instanceof Error && err.message?.includes('401')) {
       logout()
+      return
     }
+  } finally {
+    // Always set dataLoaded to true, even if there was an error
+    dataLoaded.value = true
   }
-}
-
-async function handleLoginSuccess(): Promise<void> {
-  dataLoaded.value = false
-  await loadInitialData()
 }
 
 function handleLogout(): void {
@@ -85,6 +84,14 @@ function handleLogout(): void {
   selectionStart.value = ''
   selectionEnd.value = ''
 }
+
+// Watch for authentication changes and load data when user logs in
+watch(isAuthenticated, async (newValue, oldValue) => {
+  if (newValue && !oldValue) {
+    // User just logged in
+    await loadInitialData()
+  }
+})
 
 onMounted(async () => {
   // Check for existing session
@@ -105,10 +112,7 @@ onMounted(async () => {
   </div>
 
   <!-- Login View -->
-  <LoginView
-    v-else-if="!isAuthenticated"
-    @login-success="handleLoginSuccess"
-  />
+  <LoginView v-else-if="!isAuthenticated" />
 
   <!-- Loading Data State -->
   <div v-else-if="isAuthenticated && !dataLoaded" class="min-h-screen flex items-center justify-center">

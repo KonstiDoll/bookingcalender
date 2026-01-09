@@ -7,10 +7,6 @@ interface UserOption {
   label: string
 }
 
-const emit = defineEmits<{
-  'login-success': []
-}>()
-
 const { login } = useAuth()
 
 const username: Ref<string> = ref('')
@@ -29,8 +25,6 @@ const users: UserOption[] = [
 ]
 
 async function handleLogin(): Promise<void> {
-  console.log('handleLogin called', { username: username.value, password: password.value })
-
   if (!username.value || !password.value) {
     errorMessage.value = 'Bitte Benutzer und Passwort eingeben'
     return
@@ -40,19 +34,11 @@ async function handleLogin(): Promise<void> {
   loading.value = true
 
   try {
-    console.log('Calling login...')
-    const result = await login(username.value, password.value)
-    console.log('Login successful:', result)
-
+    await login(username.value, password.value)
     // Trigger fade-out animation
     isLoggedIn.value = true
-
-    // Wait for animation to complete before emitting success
-    setTimeout(() => {
-      emit('login-success')
-    }, 800)
+    // The watch in App.vue will handle loading the data
   } catch (err) {
-    console.error('Login error:', err)
     errorMessage.value = err instanceof Error ? err.message : 'Ein Fehler ist aufgetreten'
   } finally {
     loading.value = false

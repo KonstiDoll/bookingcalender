@@ -1,13 +1,22 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { ref } from 'vue'
 
-// Mock the bookings ref from useApi
+// Create the bookings ref
+const bookings = ref([])
+
+// Mock the useApi composable
 vi.mock('../../composables/useApi', () => ({
-  bookings: ref([])
+  useApi: () => ({
+    bookings,
+    loadParties: vi.fn(),
+    loadBookings: vi.fn(),
+    createBooking: vi.fn(),
+    updateBooking: vi.fn(),
+    deleteBooking: vi.fn()
+  })
 }))
 
 import { useCalendar } from '../../composables/useCalendar'
-import { bookings } from '../../composables/useApi'
 
 describe('useCalendar', () => {
   beforeEach(() => {

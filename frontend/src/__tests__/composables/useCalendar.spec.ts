@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { ref } from 'vue'
+import type { Booking } from '../../types'
 
-// Create the bookings ref
-const bookings = ref([])
+// Create the bookings ref with explicit type
+const bookings = ref<Booking[]>([])
 
 // Mock the useApi composable
 vi.mock('../../composables/useApi', () => ({

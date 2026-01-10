@@ -20,8 +20,14 @@ const sortedBookings: ComputedRef<Booking[]> = computed(() => {
 })
 
 function formatDateRange(start: string, end: string): string {
-  const startDate = new Date(start)
-  const endDate = new Date(end)
+  // Parse ISO date strings (YYYY-MM-DD) manually to avoid timezone issues
+  const parseDate = (dateStr: string): Date => {
+    const [year, month, day] = dateStr.split('-').map(Number)
+    return new Date(year, month - 1, day)
+  }
+
+  const startDate = parseDate(start)
+  const endDate = parseDate(end)
   const options: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short' }
 
   if (start === end) {
